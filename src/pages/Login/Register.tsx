@@ -120,9 +120,12 @@ const Register: React.FC = () => {
       setIsSuccess(true);
       setMessage(res.data.message || "Registered successfully!");
 
-      // Automatically log in the user with the returned data
-      if (res.data.user) {
-        login(res.data.user);
+      // Atomically log in the user and set token
+      login(res.data.user);
+
+      if (res.data.token) {
+        localStorage.setItem('token', res.data.token);
+        axios.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
       }
 
       // Reset fields after success
