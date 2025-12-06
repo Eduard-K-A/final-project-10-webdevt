@@ -35,10 +35,14 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   }, []);
 
-  const login = (userData: UserType) => {
+  const login = (userData: UserType, token?: string) => {
     setUser(userData);
     setIsLoggedIn(true);
     localStorage.setItem('user', JSON.stringify(userData));
+    if (token) {
+      localStorage.setItem('token', token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    }
   };
 
   const logout = () => {
