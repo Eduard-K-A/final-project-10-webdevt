@@ -1,37 +1,52 @@
-// src/components/SearchForm/SearchForm.tsx
-import React, { useState } from 'react';
+// src/components/Search/SearchForm.tsx
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import  { useSearchContext } from '../../context/SearchContext';
+import { Search } from 'lucide-react';
+import { useSearchContext } from '../../context/SearchContext';
 import type { SearchOptions } from '../../types.ts';
 
-const SearchForm: React.FC = () => {
-    const navigate = useNavigate();
-    const { updateSearchParams } = useSearchContext() as ReturnType<typeof useSearchContext>;
+interface SearchFormProps {
+    className?: string;
+}
 
-    // Local state
+const todayInputValue = () => new Date().toISOString().split('T')[0];
+
+const SearchForm: React.FC<SearchFormProps> = ({ className = '' }) => {
+    const navigate = useNavigate();
+    const { updateSearchParams } = useSearchContext();
+
     const [destination, setDestination] = useState<string>('');
     const [checkIn, setCheckIn] = useState<string>('');
     const [checkOut, setCheckOut] = useState<string>('');
     const [options, setOptions] = useState<SearchOptions>({ adults: 1, children: 0, rooms: 1 });
-
     const [error, setError] = useState<string | null>(null);
+
+    const today = useMemo(todayInputValue, []);
+
+    const updateOption = (key: keyof SearchOptions, value: string) => {
+        setOptions((current) => ({
+            ...current,
+            [key]: Number(value),
+        }));
+    };
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
 
-        // Basic validation
-        if (!destination || !checkIn || !checkOut) {
+        const trimmedDestination = destination.trim();
+
+        if (!trimmedDestination || !checkIn || !checkOut) {
             setError("Please select a destination and dates.");
             return;
         }
 
-        const today = new Date();
-        today.setHours(0,0,0,0);
+        const todayDate = new Date();
+        todayDate.setHours(0, 0, 0, 0);
         const checkInDate = new Date(checkIn);
         const checkOutDate = new Date(checkOut);
 
-        if (checkInDate < today) {
+        if (checkInDate < todayDate) {
             setError("Check-in date cannot be in the past.");
             return;
         }
@@ -40,79 +55,93 @@ const SearchForm: React.FC = () => {
             return;
         }
 
-        // 1. Update Global State with Date objects
-        updateSearchParams({ 
-            destination, 
-            checkInDate, 
-            checkOutDate, 
-            options 
+        updateSearchParams({
+            destination: trimmedDestination,
+            checkInDate,
+            checkOutDate,
+            options
         });
-        navigate('/hotels/search'); 
+        navigate('/Rooms/Search');
     };
 
     return (
         <form
-        className="flex flex-col md:flex-row items-center justify-center p-4 bg-white rounded-lg shadow-xl -mt-10 mx-auto w-11/12 max-w-5xl space-y-3 md:space-y-0 md:space-x-3 opacity-0 animate-slide-up-fade-in"
-        style={{ animationDelay: "0.3s" }}
-        onSubmit={handleSearch}
+            className={`space-y-3 ${className}`}
+            onSubmit={handleSearch}
         >
-            {/* Error Message */}
             {error && (
-                <div className="w-full mb-2 text-center text-red-600 bg-red-100 border border-red-200 rounded p-2">
+                <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" role="alert">
                     {error}
-                </div>
+                </p>
             )}
-            {/* destination Input */}
-            <div className="flex-1 w-full md:w-auto">
-                <input 
-                    type="text" 
-                    style={{ color: 'gray' }}
-                    placeholder="Where are you going?" 
-                    className="p-3 w-full border border-black-300 rounded focus:ring-blue-500 focus:border-blue-500"
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDestination(e.target.value)}
-                    required
-                />
-            </div>
 
-            {/* Date Inputs */}
-            <div className="flex space-x-2 w-full md:w-auto md:flex-initial">
-                <input 
-                    type="date" 
-                    style={{ color: 'gray' }}
-                    className="p-3 w-1/2 border border-black-300 rounded focus:ring-blue-500 focus:border-blue-500"
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCheckIn(e.target.value)}
-                    required
-                />
-                <input 
-                    type="date" 
-                    style={{ color: 'gray' }}
-                    className="p-3 w-1/2 border border-black-300 rounded focus:ring-blue-500 focus:border-blue-500"
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCheckOut(e.target.value)}
-                    required
-                />
-            </div>
+            <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-[minmax(180px,1.4fr)_minmax(140px,1fr)_minmax(140px,1fr)_minmax(120px,0.8fr)_auto]">
+                <label className="block">
+                    <span className="mb-1 block text-[11px] font-semibold text-[#0a1e3d]">
+                        Destination
+                    </span>
+                    <input
+                        type="text"
+                        value={destination}
+                        placeholder="City or hotel"
+                        className="h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none transition placeholder:text-gray-400 focus:border-[#d4a574] focus:ring-2 focus:ring-[#d4a574]/20"
+                        onChange={(e) => setDestination(e.target.value)}
+                        required
+                    />
+                </label>
 
-            {/* Options Dropdown */}
-            <div className="w-full md:w-auto md:flex-initial">
-                <select 
-                    className="p-3 w-full border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
-                   style={{ color: 'gray' }}
-                    value={options.adults} 
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setOptions({...options, adults: parseInt(e.target.value) as SearchOptions["adults"]})}
+                <label className="block">
+                    <span className="mb-1 block text-[11px] font-semibold text-[#0a1e3d]">
+                        Check-in
+                    </span>
+                    <input
+                        type="date"
+                        value={checkIn}
+                        min={today}
+                        className="h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none transition focus:border-[#d4a574] focus:ring-2 focus:ring-[#d4a574]/20"
+                        onChange={(e) => setCheckIn(e.target.value)}
+                        required
+                    />
+                </label>
+
+                <label className="block">
+                    <span className="mb-1 block text-[11px] font-semibold text-[#0a1e3d]">
+                        Check-out
+                    </span>
+                    <input
+                        type="date"
+                        value={checkOut}
+                        min={checkIn || today}
+                        className="h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none transition focus:border-[#d4a574] focus:ring-2 focus:ring-[#d4a574]/20"
+                        onChange={(e) => setCheckOut(e.target.value)}
+                        required
+                    />
+                </label>
+
+                <label className="block">
+                    <span className="mb-1 block text-[11px] font-semibold text-[#0a1e3d]">
+                        Guests
+                    </span>
+                    <select
+                        className="h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none transition focus:border-[#d4a574] focus:ring-2 focus:ring-[#d4a574]/20"
+                        value={options.adults}
+                        onChange={(e) => updateOption('adults', e.target.value)}
+                    >
+                        <option value={1}>1 Adult</option>
+                        <option value={2}>2 Adults</option>
+                        <option value={3}>3 Adults</option>
+                        <option value={4}>4 Adults</option>
+                    </select>
+                </label>
+
+                <button
+                    type="submit"
+                    className="mt-0 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#d4a574] px-4 text-sm font-semibold text-[#0a1e3d] shadow-sm transition hover:bg-[#c19563] focus:outline-none focus:ring-2 focus:ring-[#d4a574] focus:ring-offset-2 md:col-span-2 lg:col-span-1 lg:mt-5 lg:w-auto"
                 >
-                    <option value={1}>1 Adult, {options.rooms} Room</option>
-                    <option value={2}>2 Adults, {options.rooms} Rooms</option>
-                    {/* ... more options */}
-                </select>
+                    <Search className="h-4 w-4" />
+                    Search
+                </button>
             </div>
-
-            {/* Search Button */}
-            <button 
-                type="submit" 
-                className="w-full md:w-auto bg-[#d4a574] text-white font-semibold py-3 px-6 rounded hover:bg-[#b48c5a] transition duration-300"
-            >
-                Search
-            </button>
         </form>
     );
 };
